@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lua Cheia — Adivinhe as Músicas do Jão</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg: #0a0c17;
+  --bg-soft: #10132455;
+  --panel: #12152a;
+  --panel-2: #171b34;
+  --border: #262b4d;
+  --text: #e9e6dd;
+  --text-dim: #8890b3;
+  --gold: #d9a441;
+  --gold-soft: #d9a44133;
+  --crimson: #c1443c;
+  --serif: 'Fraunces', serif;
+  --sans: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, #1a1f42 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding: 32px 16px 80px;
+  line-height: 1.5;
+}
+
+.wrap{ max-width: 1280px; margin: 0 auto; }
+
+/* ---------- Header ---------- */
+header{ text-align:center; margin-bottom: 28px; }
+
+.eyebrow{
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+h1{
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(30px, 6vw, 48px);
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+h1 em{
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+.subtitle{
+  color: var(--text-dim);
+  font-size: 14.5px;
+  margin-top: 8px;
+  max-width: 460px;
+  margin-left:auto; margin-right:auto;
+}
+
+/* ---------- Moon signature ---------- */
+.moon-row{
+  display:flex; align-items:center; justify-content:center; gap:22px;
+  margin: 26px 0 6px;
+}
+.moon-wrap{
+  width: 82px; height: 82px; border-radius: 50%;
+  position: relative; overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #f4dfa8, var(--gold) 70%);
+  box-shadow: 0 0 0 1px #ffffff14, 0 0 28px 2px #d9a44140;
+  flex-shrink: 0;
+}
+.moon-shadow{
+  position:absolute; top:-4%; right:0; height:108%;
+  width: 100%;
+  background: radial-gradient(circle at 65% 30%, #171b34, var(--bg) 75%);
+  transition: width 0.5s cubic-bezier(.4,0,.2,1);
+}
+.moon-craters{ position:absolute; inset:0; opacity:.18; mix-blend-mode: multiply; }
+
+.progress-info{ text-align:left; }
+.progress-count{
+  font-family: var(--serif);
+  font-size: 26px;
+  color: var(--text);
+}
+.progress-count span{ color: var(--gold); }
+.progress-label{
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.bar-track{
+  width: 220px; height: 6px; border-radius: 4px;
+  background: var(--panel-2);
+  overflow:hidden; margin-top: 8px;
+  border: 1px solid var(--border);
+}
+.bar-fill{
+  height:100%; width:0%;
+  background: linear-gradient(90deg, var(--crimson), var(--gold));
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+
+/* ---------- Controls ---------- */
+.controls{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:16px;
+  justify-content: space-between;
+  margin: 22px 0 26px;
+}
+
+.timer-block{ display:flex; align-items:center; gap:12px; }
+.timer-display{
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  min-width: 92px;
+}
+.timer-display.warning{ color: var(--crimson); }
+.timer-mode-label{
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.toggle-block{ display:flex; align-items:center; gap:10px; }
+
+.switch{
+  position: relative; width: 42px; height: 24px; flex-shrink:0;
+}
+.switch input{ opacity:0; width:0; height:0; }
+.slider{
+  position:absolute; cursor:pointer; inset:0;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 24px; transition: .25s;
+}
+.slider::before{
+  content:""; position:absolute; height:16px; width:16px; left:3px; top:2px;
+  background: var(--text-dim); border-radius:50%; transition: .25s;
+}
+.switch input:checked + .slider{ background: var(--crimson); border-color: var(--crimson); }
+.switch input:checked + .slider::before{ transform: translateX(18px); background: #fff; }
+.switch input:disabled + .slider{ opacity: .45; cursor: not-allowed; }
+
+.minutes-input{
+  width: 58px; background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 6px 8px;
+  font-family: var(--mono); font-size: 14px; text-align:center;
+}
+.minutes-input:disabled{ opacity:.4; }
+
+button{
+  font-family: var(--sans); font-weight: 600; font-size: 13.5px;
+  border-radius: 10px; border: 1px solid var(--border);
+  padding: 10px 18px; cursor:pointer; background: var(--panel-2); color: var(--text);
+  transition: .15s;
+}
+button:hover{ border-color: var(--gold); }
+button:disabled{ opacity:.4; cursor:not-allowed; }
+.btn-primary{
+  background: linear-gradient(135deg, var(--gold), #c98a2c);
+  color: #17130a; border: none;
+}
+.btn-primary:hover{ filter: brightness(1.08); }
+.btn-ghost{ background: transparent; }
+
+/* ---------- Guess form ---------- */
+.hard-mode-note{
+  text-align: center; font-family: var(--mono); font-size: 11.5px;
+  color: var(--crimson); margin: -14px 0 20px; letter-spacing: .3px;
+}
+
+.guess-form{
+  display:flex; gap:10px; margin-bottom: 10px;
+}
+.guess-input{
+  flex:1; background: var(--panel); border: 1px solid var(--border);
+  color: var(--text); border-radius: 12px; padding: 14px 16px;
+  font-size: 16px; font-family: var(--sans);
+}
+.guess-input:focus{ outline:none; border-color: var(--gold); }
+.guess-input::placeholder{ color: var(--text-dim); }
+.guess-input:disabled{ opacity: .5; }
+
+.feedback{
+  min-height: 20px; font-size: 13px; font-family: var(--mono);
+  margin: 4px 2px 22px; letter-spacing: .3px;
+}
+.feedback.ok{ color: #7fd18c; }
+.feedback.bad{ color: var(--crimson); }
+.feedback.dup{ color: var(--text-dim); }
+
+/* ---------- Sections ---------- */
+.category-group{ margin-bottom: 40px; }
+.category-group > h2{
+  font-family: var(--serif); font-weight: 600; font-style: italic;
+  font-size: 22px; color: var(--gold); margin-bottom: 16px;
+  border-bottom: 1px solid var(--border); padding-bottom: 10px;
+}
+
+.cards-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.card{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  transition: border-color .3s, box-shadow .3s;
+}
+.card-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  margin-bottom: 12px;
+}
+.card--collapsed .card-head{ margin-bottom: 0; }
+.card--collapsed .card-body{ display:none; }
+
+.card-toggle{
+  background: transparent; border: 1px solid var(--border); border-radius: 8px;
+  width: 26px; height: 26px; padding: 0; flex-shrink: 0;
+  display:flex; align-items:center; justify-content:center;
+  font-size: 12px; color: var(--text-dim); line-height:1;
+}
+.card-toggle:hover{ color: var(--gold); border-color: var(--gold); }
+
+.card--complete{
+  border-color: var(--gold-soft);
+  box-shadow: 0 0 0 1px var(--gold-soft);
+}
+.card--complete h3{ color: var(--gold); }
+
+.card h3{
+  font-family: var(--serif); font-weight: 600; font-size: 16.5px;
+  color: var(--text); margin-bottom: 3px;
+}
+.card .tag{
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; display:block;
+}
+
+.track{
+  font-family: var(--mono);
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: var(--text-dim);
+  padding: 6px 0;
+}
+.track:not(:last-child){
+  border-bottom: 1px solid #ffffff0c;
+}
+.track .w-guessed{ color: var(--text); font-weight: 700; }
+.track .w-blank{ color: #4c527a; letter-spacing: 1px; }
+.track .lit{ color: var(--text-dim); }
+.track .lit-feat{ color: #545a80; font-style: italic; }
+.track .lit-artist{ color: #6f7aa8; font-style: italic; }
+
+.track--complete{ color: var(--text-dim); }
+.track--complete .w-guessed{ color: var(--gold); }
+
+@keyframes popIn{
+  0%{ transform: scale(.55); opacity: .35; }
+  55%{ transform: scale(1.22); }
+  100%{ transform: scale(1); opacity: 1; }
+}
+.w-guessed.pop{
+  display: inline-block;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes trackShine{
+  0%{ box-shadow: 0 0 0 0 #d9a44100; background: transparent; }
+  35%{ box-shadow: 0 0 18px 3px #d9a44166; background: #d9a44116; }
+  100%{ box-shadow: 0 0 0 0 #d9a44100; background: transparent; }
+}
+.track--sparkle{ animation: trackShine 1.2s ease; border-radius: 8px; }
+
+/* ---------- Overlay ---------- */
+.overlay{
+  position: fixed; inset:0; background: #05060cdd; backdrop-filter: blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index: 50;
+  opacity:0; pointer-events:none; transition: opacity .35s;
+}
+.overlay.show{ opacity:1; pointer-events:all; }
+.overlay-card{
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 20px; padding: 40px 36px; max-width: 380px; text-align:center;
+  transform: translateY(10px); transition: transform .35s;
+}
+.overlay.show .overlay-card{ transform: translateY(0); }
+.overlay-card h2{
+  font-family: var(--serif); font-size: 28px; font-style: italic; margin-bottom: 10px;
+}
+.overlay-card.win h2{ color: var(--gold); }
+.overlay-card.lose h2{ color: var(--crimson); }
+.overlay-card p{ color: var(--text-dim); font-size: 14px; margin-bottom: 22px; }
+.overlay-card .stat{ font-family: var(--mono); color: var(--text); font-size: 22px; margin-bottom: 4px; }
+
+footer{ text-align:center; margin-top: 30px; color: var(--text-dim); font-size:12px; font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">um jogo de palavras</div>
+    <h1>Lua Cheia: as <em>faixas</em> do Jão</h1>
+    <p class="subtitle">Digite palavras que aparecem nos nomes das músicas. Cada acerto ilumina a palavra em toda a discografia — até a lua encher.</p>
+  </header>
+
+  <div class="moon-row">
+    <div class="moon-wrap">
+      <div class="moon-shadow" id="moonShadow"></div>
+    </div>
+    <div class="progress-info">
+      <div class="progress-count"><span id="guessedCount">0</span> / <span id="totalCount">0</span></div>
+      <div class="progress-label">palavras reveladas</div>
+      <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="timer-block">
+      <div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-mode-label" id="timerModeLabel">contagem crescente</div>
+      </div>
+    </div>
+
+    <div class="toggle-block">
+      <span class="timer-mode-label">regressiva</span>
+      <label class="switch">
+        <input type="checkbox" id="modeToggle">
+        <span class="slider"></span>
+      </label>
+      <input type="number" id="minutesInput" class="minutes-input" value="5" min="1" max="60" disabled>
+      <span class="timer-mode-label">min</span>
+    </div>
+
+    <div class="toggle-block">
+      <span class="timer-mode-label" style="color:var(--crimson);">modo difícil</span>
+      <label class="switch">
+        <input type="checkbox" id="hardModeToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn-primary" id="startBtn">Iniciar</button>
+      <button class="btn-ghost" id="resetBtn">Reiniciar</button>
+    </div>
+  </div>
+  <div class="hard-mode-note" id="hardModeNote" style="display:none;">10 minutos fixos, sem dica de tamanho das palavras.</div>
+
+  <form class="guess-form" id="guessForm">
+    <input type="text" id="guessInput" class="guess-input" placeholder="Clique em “Iniciar” para começar a adivinhar..." autocomplete="off" disabled>
+    <button type="submit" class="btn-primary" id="guessBtn" disabled>Adivinhar</button>
+  </form>
+  <div class="feedback" id="feedback"></div>
+
+  <div id="sections"></div>
+
+  <footer>feito com base no repertório oficial de Jão — boa sorte, lobo(a) 🌙</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card" id="overlayCard">
+    <h2 id="overlayTitle">Lua cheia!</h2>
+    <div class="stat" id="overlayStat">00:00</div>
+    <p id="overlayText">Você revelou todas as palavras da discografia.</p>
+    <button class="btn-primary" id="overlayBtn">Jogar de novo</button>
+  </div>
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const DATA = {
+  "albuns_de_estudio": [
+    { "album": "LOBOS", "faixas": ["Vou Morrer Sozinho","Me Beija Com Raiva","Lindo Demais","Imaturo","Ainda Te Amo","A Rua","Lobos","Eu Quero Ser Como Você","Aqui","Monstros","Fim Do Mundo","Ressaca"] },
+    { "album": "ANTI-HERÓI", "faixas": ["A Última Noite","Triste Pra Sempre","Enquanto Me Beija","Essa Eu Fiz Pro Nosso Amor","Fim De Festa","Barcelona","Você Vai Me Destruir","VSF","Hotel San Diego",":( (Nota De Voz 8)"] },
+    { "album": "PIRATA", "faixas": ["Clarão","Não Te Amo","Idiota","Santo","Acontece","Você Me Perdeu","Meninos e Meninas","Coringa","Doce","Tempos De Glória","Olhos Vermelhos"] },
+    { "album": "SUPERNOVA", "faixas": ["Religião","Acidente","Modo de Dizer","O Triste É Que Eu Te Amo","Carnaval","Supernova","Paranoid","Escorpião","Me Lambe","Gameboy","Alinhamento Milenar","Lábia","Maria","Julho","Eu Posso Ser Como Você","Sinais","Se O Problema Era Você, Por Que Doeu Em Mim?","Locadora","Rádio","São Paulo, 2015","Super"] }
+  ],
+  "singles_eps_e_feats": [
+    { "tipo": "EP", "titulo": "Primeiro Acústico", "faixas": ["Aqui - Acústico","Álcool - Acústico","Ressaca - Acústico","Imaturo - Acústico"] },
+    { "tipo": "Single", "faixas": ["Álcool","Louquinho","Codinome Beija-Flor / O Tempo Não Para","AMOR PIRATA"] },
+    { "tipo": "Feat", "faixas": ["Dança Pra Mim (feat. Pedrowl)","Pilantra (feat. Anitta)","Mal (feat. Gustavo Mioto)","Jardins Da Babilônia (feat. Julia Mestre)"] },
+    { "tipo": "Participações", "faixas": ["A Boba Fui Eu (Ludmilla feat. Jão)","Dilema (Malía feat. Jão)","Dúvida (Vitor Kley feat. Jão)","Me Liga (Ivete Sangalo feat. Jão)","fugitivos :) (Luiza Sonsa feat. Jão)","Sim (Nando Reis feat. Jão)"] }
+  ]
+};
+
+/* ---------------- HELPERS ---------------- */
+function normalize(str){
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+}
+
+const WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ0-9]+/g;
+
+function tokenize(title, isFeat){
+  const parts = [];
+  let last = 0;
+  let m;
+  WORD_RE.lastIndex = 0;
+  while ((m = WORD_RE.exec(title)) !== null){
+    if (m.index > last) parts.push({ type:'lit', text: title.slice(last, m.index) });
+    parts.push({ type:'word', text: m[0], norm: normalize(m[0]), start: m.index, end: m.index + m[0].length, gameType: 'word' });
+    last = m.index + m[0].length;
+  }
+  if (last < title.length) parts.push({ type:'lit', text: title.slice(last) });
+
+  if (isFeat){
+    const match = title.match(/feat\.?\s*([^)]+)/i);
+    if (match){
+      const featStart = title.toLowerCase().indexOf('feat', match.index);
+      const featEnd = featStart + 4;
+      const artistName = match[1].trim();
+      const artistStart = title.indexOf(artistName, match.index);
+      const artistEnd = artistStart >= 0 ? artistStart + artistName.length : -1;
+      parts.forEach(p => {
+        if (p.type !== 'word') return;
+        if (p.start >= featStart && p.end <= featEnd){
+          p.gameType = 'lit-feat';
+        } else if (artistStart >= 0 && p.start >= artistStart && p.end <= artistEnd){
+          p.gameType = 'artist';
+        }
+      });
+    }
+  }
+  return parts;
+}
+
+/* ---------------- BUILD MODEL ---------------- */
+const groups = [
+  {
+    name: "Álbuns de Estúdio",
+    cards: DATA.albuns_de_estudio.map((a, i) => ({
+      id: `alb-${i}`,
+      title: a.album.trim(),
+      tag: "Álbum",
+      tracks: a.faixas.map(f => ({ title: f, parts: tokenize(f, false) }))
+    }))
+  },
+  {
+    name: "Singles, EPs e Feats",
+    cards: DATA.singles_eps_e_feats
+      .filter(s => s.tipo !== 'Participações')
+      .map((s, i) => ({
+        id: `sef-${i}`,
+        title: s.titulo ? s.titulo : s.tipo,
+        tag: s.titulo ? `EP` : s.tipo,
+        tracks: s.faixas.map(f => ({ title: f, parts: tokenize(f, s.tipo === 'Feat') }))
+      }))
+  }
+];
+
+function isPartCounted(p){
+  return p.gameType === 'word' || (p.gameType === 'artist' && hardMode);
+}
+
+function isTrackComplete(t){
+  return t.parts.every(p => p.type !== 'word' || !isPartCounted(p) || guessed.has(p.norm));
+}
+
+function buildAllWords(){
+  const s = new Set();
+  groups.forEach(g => g.cards.forEach(c => c.tracks.forEach(t => t.parts.forEach(p => {
+    if (p.type !== 'word') return;
+    if (isPartCounted(p)) s.add(p.norm);
+  }))));
+  return s;
+}
+
+let allWords = new Set();
+const guessed = new Set();
+const collapsedCards = new Set();
+const completedCards = new Set();
+const completedTracks = new Set();
+
+/* ---------------- RENDER ---------------- */
+const sectionsEl = document.getElementById('sections');
+
+function renderAll(justGuessed){
+  justGuessed = justGuessed || new Set();
+  sectionsEl.innerHTML = '';
+  groups.forEach(g => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'category-group';
+    const h2 = document.createElement('h2');
+    h2.textContent = g.name;
+    groupEl.appendChild(h2);
+
+    const gridEl = document.createElement('div');
+    gridEl.className = 'cards-grid';
+
+    g.cards.forEach(c => {
+      const cardComplete = c.tracks.every(isTrackComplete);
+      if (cardComplete && !completedCards.has(c.id)){
+        completedCards.add(c.id);
+        collapsedCards.add(c.id);
+      }
+      const isCollapsed = collapsedCards.has(c.id);
+
+      const card = document.createElement('div');
+      card.className = 'card' + (isCollapsed ? ' card--collapsed' : '') + (cardComplete ? ' card--complete' : '');
+
+      const head = document.createElement('div');
+      head.className = 'card-head';
+
+      const headText = document.createElement('div');
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = c.tag;
+      const h3 = document.createElement('h3');
+      h3.textContent = c.title;
+      headText.appendChild(tag);
+      headText.appendChild(h3);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'card-toggle';
+      toggleBtn.textContent = isCollapsed ? '▸' : '▾';
+      toggleBtn.setAttribute('aria-label', isCollapsed ? 'Expandir card' : 'Minimizar card');
+      toggleBtn.addEventListener('click', () => {
+        if (collapsedCards.has(c.id)) collapsedCards.delete(c.id);
+        else collapsedCards.add(c.id);
+        renderAll();
+      });
+
+      head.appendChild(headText);
+      head.appendChild(toggleBtn);
+      card.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = 'card-body';
+
+      c.tracks.forEach(t => {
+        const trackComplete = isTrackComplete(t);
+        const trackEl = document.createElement('div');
+        trackEl.className = 'track' + (trackComplete ? ' track--complete' : '');
+
+        if (trackComplete){
+          const trackId = c.id + '::' + t.title;
+          if (!completedTracks.has(trackId)){
+            completedTracks.add(trackId);
+            trackEl.classList.add('track--sparkle');
+          }
+        }
+
+        t.parts.forEach(p => {
+          if (p.type === 'lit'){
+            const span = document.createElement('span');
+            span.className = 'lit';
+            span.textContent = p.text;
+            trackEl.appendChild(span);
+            return;
+          }
+          const span = document.createElement('span');
+          if (!isPartCounted(p)){
+            span.className = p.gameType === 'lit-feat' ? 'lit lit-feat' : 'lit lit-artist';
+            span.textContent = p.text;
+          } else if (guessed.has(p.norm)){
+            span.className = 'w-guessed' + (justGuessed.has(p.norm) ? ' pop' : '');
+            span.textContent = p.text;
+          } else {
+            span.className = 'w-blank';
+            span.textContent = hardMode ? '▢▢▢' : '_'.repeat(p.text.length);
+          }
+          trackEl.appendChild(span);
+        });
+
+        body.appendChild(trackEl);
+      });
+
+      card.appendChild(body);
+      gridEl.appendChild(card);
+    });
+
+    groupEl.appendChild(gridEl);
+    sectionsEl.appendChild(groupEl);
+  });
+}
+
+function updateProgress(){
+  document.getElementById('guessedCount').textContent = guessed.size;
+  document.getElementById('totalCount').textContent = allWords.size;
+  const pct = allWords.size ? (guessed.size / allWords.size) * 100 : 0;
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('moonShadow').style.width = (100 - pct) + '%';
+}
+
+/* ---------------- TIMER ---------------- */
+let seconds = 0;
+let countdownMode = false;
+let hardMode = false;
+let timerInterval = null;
+let gameActive = false;
+let gameOver = false;
+
+const timerDisplay = document.getElementById('timerDisplay');
+const timerModeLabel = document.getElementById('timerModeLabel');
+const modeToggle = document.getElementById('modeToggle');
+const hardModeToggle = document.getElementById('hardModeToggle');
+const hardModeNote = document.getElementById('hardModeNote');
+const minutesInput = document.getElementById('minutesInput');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const guessInput = document.getElementById('guessInput');
+const guessBtn = document.getElementById('guessBtn');
+const guessForm = document.getElementById('guessForm');
+const feedback = document.getElementById('feedback');
+const overlay = document.getElementById('overlay');
+const overlayCard = document.getElementById('overlayCard');
+const overlayTitle = document.getElementById('overlayTitle');
+const overlayStat = document.getElementById('overlayStat');
+const overlayText = document.getElementById('overlayText');
+const overlayBtn = document.getElementById('overlayBtn');
+
+function formatTime(totalSeconds){
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+}
+
+function renderTimer(){
+  timerDisplay.textContent = formatTime(seconds);
+  if (countdownMode && seconds <= 30){
+    timerDisplay.classList.add('warning');
+  } else {
+    timerDisplay.classList.remove('warning');
+  }
+}
+
+modeToggle.addEventListener('change', () => {
+  countdownMode = modeToggle.checked;
+  minutesInput.disabled = !countdownMode;
+  timerModeLabel.textContent = countdownMode ? 'contagem regressiva' : 'contagem crescente';
+  seconds = countdownMode ? Math.max(1, parseInt(minutesInput.value || '5', 10)) * 60 : 0;
+  renderTimer();
+});
+
+hardModeToggle.addEventListener('change', () => {
+  hardMode = hardModeToggle.checked;
+  hardModeNote.style.display = hardMode ? 'block' : 'none';
+
+  if (hardMode){
+    modeToggle.checked = true;
+    modeToggle.disabled = true;
+    countdownMode = true;
+    minutesInput.value = 10;
+    minutesInput.disabled = true;
+    seconds = 10 * 60;
+    timerModeLabel.textContent = 'modo difícil · 10 min';
+  } else {
+    modeToggle.disabled = false;
+    countdownMode = modeToggle.checked;
+    minutesInput.disabled = !countdownMode;
+    minutesInput.value = 5;
+    seconds = countdownMode ? Math.max(1, parseInt(minutesInput.value || '5', 10)) * 60 : 0;
+    timerModeLabel.textContent = countdownMode ? 'contagem regressiva' : 'contagem crescente';
+  }
+  renderTimer();
+  allWords = buildAllWords();
+  updateProgress();
+  renderAll();
+});
+
+minutesInput.addEventListener('input', () => {
+  if (!gameActive && countdownMode){
+    seconds = Math.max(1, parseInt(minutesInput.value || '5', 10)) * 60;
+    renderTimer();
+  }
+});
+
+function tick(){
+  if (countdownMode){
+    seconds -= 1;
+    if (seconds <= 0){
+      seconds = 0;
+      renderTimer();
+      endGame(false);
+      return;
+    }
+  } else {
+    seconds += 1;
+  }
+  renderTimer();
+}
+
+function startGame(){
+  if (gameActive) return;
+  gameActive = true;
+  gameOver = false;
+  modeToggle.disabled = true;
+  hardModeToggle.disabled = true;
+  minutesInput.disabled = true;
+  startBtn.disabled = true;
+  guessInput.disabled = false;
+  guessBtn.disabled = false;
+  guessInput.placeholder = 'Digite uma palavra ou o nome completo de uma música...';
+  guessInput.focus();
+  timerInterval = setInterval(tick, 1000);
+}
+
+function stopTimer(){
+  if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+}
+
+function endGame(won){
+  gameActive = false;
+  gameOver = true;
+  stopTimer();
+  guessInput.disabled = true;
+  guessBtn.disabled = true;
+
+  overlay.classList.add('show');
+  overlayStat.textContent = formatTime(countdownMode ? (parseInt(minutesInput.value||'5',10)*60 - seconds) : seconds);
+  if (won){
+    overlayCard.className = 'overlay-card win';
+    overlayTitle.textContent = 'Lua cheia! 🌕';
+    overlayText.textContent = 'Você revelou todas as palavras da discografia.';
+  } else {
+    overlayCard.className = 'overlay-card lose';
+    overlayTitle.textContent = 'O tempo uivou e passou...';
+    overlayText.textContent = `Você revelou ${guessed.size} de ${allWords.size} palavras. Tente de novo.`;
+  }
+}
+
+startBtn.addEventListener('click', startGame);
+
+overlayBtn.addEventListener('click', () => {
+  window.location.reload();
+});
+
+resetBtn.addEventListener('click', () => {
+  window.location.reload();
+});
+
+/* ---------------- GUESS LOGIC ---------------- */
+guessForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!gameActive || gameOver) return;
+  const raw = guessInput.value.trim();
+  if (!raw) return;
+  guessInput.value = '';
+
+  const tokens = [];
+  let m;
+  WORD_RE.lastIndex = 0;
+  while ((m = WORD_RE.exec(raw)) !== null) tokens.push(m[0]);
+
+  if (tokens.length === 0) return;
+
+  let newlyRevealed = [];
+  let newlyRevealedNorms = new Set();
+  let dupCount = 0;
+  let missCount = 0;
+
+  tokens.forEach(tok => {
+    const norm = normalize(tok);
+    if (guessed.has(norm)){
+      dupCount++;
+    } else if (allWords.has(norm)){
+      guessed.add(norm);
+      newlyRevealed.push(tok);
+      newlyRevealedNorms.add(norm);
+    } else {
+      missCount++;
+    }
+  });
+
+  if (newlyRevealed.length > 0){
+    renderAll(newlyRevealedNorms);
+    updateProgress();
+    const label = newlyRevealed.length === 1
+      ? `"${newlyRevealed[0]}" revelada!`
+      : `${newlyRevealed.length} palavras reveladas: ${newlyRevealed.join(', ')}`;
+    const extras = [];
+    if (dupCount > 0) extras.push(`${dupCount} já conhecida(s)`);
+    if (missCount > 0) extras.push(`${missCount} não encontrada(s)`);
+    feedback.textContent = label + (extras.length ? ` (${extras.join(', ')})` : '');
+    feedback.className = 'feedback ok';
+    if (guessed.size === allWords.size){
+      endGame(true);
+    }
+  } else if (dupCount > 0 && missCount === 0){
+    feedback.textContent = tokens.length === 1 ? `"${raw}" já foi revelada.` : 'Todas essas palavras já foram reveladas.';
+    feedback.className = 'feedback dup';
+  } else {
+    feedback.textContent = tokens.length === 1
+      ? `"${raw}" não aparece em nenhuma faixa.`
+      : `Nenhuma palavra nova encontrada em "${raw}".`;
+    feedback.className = 'feedback bad';
+  }
+});
+
+/* ---------------- INIT ---------------- */
+allWords = buildAllWords();
+renderAll();
+updateProgress();
+renderTimer();
+</script>
+</body>
+</html>
